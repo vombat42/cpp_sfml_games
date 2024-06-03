@@ -3,144 +3,67 @@
 #include <math.h>
 #include <unistd.h>
 
-using namespace sf;
 
-enum parametrs {
-    win_w = 1600,
-    win_h = 900,
-    item_size = 75,
-    speed = 1,
-};
+#include "StartMenu.h"
+#include "ArrowFirst.cpp"
+#include "FireFighter.cpp"
+
+
+using namespace sf;
 
 int main(int argc, char const *argv[])
 {
-    srand(time(NULL));
+    // Создаём окно windows
+    RenderWindow window;
+    window.create(VideoMode::getDesktopMode(), L"Моя игра", Style::Fullscreen);
+    window.setMouseCursorVisible(false); //отключаем видимость курсора
+    // Размер экрана
+    auto width = static_cast<float>(VideoMode::getDesktopMode().width);
+    auto height = static_cast<float>(VideoMode::getDesktopMode().height);
+
+    // Название пунктов меню
+    std::vector<String> name_menu{ L"\"Наведи на цель\"",L"\"Пожарный\"", L"Выход" };
+
+    // Объект меню
+    StartMenu mymenu(window, 900, 300, 100, 120, name_menu);
+    // Установка цвета отображения меню
+    mymenu.setColorTextMenu(Color(237, 147, 0), Color::Red, Color::Black);
+    // mymenu.AlignMenu(2);
 
 
-    RenderWindow win(VideoMode(win_w,win_h), L"Развивающие игры для маленьких");
-    Image icon;
-    if (!icon.loadFromFile("img/icon.png")) {
-        return 1;
-    }
+    // Устанавливаем фон экрана меню
+    RectangleShape background(Vector2f(width, height));
 
-    win.setIcon(32, 32, icon.getPixelsPtr());
-
-    // Звездочка молодец
-    Texture TextureStarGood;
-    TextureStarGood.loadFromFile("img/star_good.png");
-    Sprite starGood;
-    starGood.setPosition((win_w - 618) / 2, (win_h - 548) / 2 + 50);
-    starGood.setTexture(TextureStarGood);
-    
-    // надпись умница
-    Texture TextureSignGood;
-    TextureSignGood.loadFromFile("img/umnitsa.png");
-    Sprite signGood;
-    signGood.setPosition((win_w - 737) / 2, 50);
-    signGood.setTexture(TextureSignGood);
-
-    // звук молодец
-    SoundBuffer buffer; 
-    buffer.loadFromFile("audio/umnitsa.ogg");
-    Sound soundGood;
-    soundGood.setBuffer(buffer);
-
-    // Указатель
-    Vector2f moveRec, pos, target_pos;
-    CircleShape pointer(item_size);
-    pointer.setFillColor(Color::Green);
-    pointer.setPosition((win_w - item_size)/ 2, (win_h - item_size)/ 2);
-
-    // Цель
-    CircleShape target(item_size);
-    // target.setFillColor(Color::Yellow);
-    target.setFillColor(Color(0,0,0,0));
-    target.setOutlineThickness(3);
-    target.setOutlineColor(Color::Green);
-    target_pos.x = rand() % (win_w - item_size * 2);
-    target_pos.y = rand() % (win_h - item_size * 2);
-    target.setPosition(target_pos.x, target_pos.y);
-    
-    Clock clock;
-    float time, timePointer;
-
-    bool is_goal {false};
-
-    while (win.isOpen())
+    while (window.isOpen())
     {
         Event event;
-        time = clock.getElapsedTime().asMicroseconds();
-        timePointer = time / 6000 * speed;
-        clock.restart();
-
-        while (win.pollEvent(event))
+        while (window.pollEvent(event))
         {
-            if(event.type == Event::Closed){
-                win.close();
-            }
-            // Управление
-            switch (event.type)
+
+            if (event.type == Event::KeyReleased)
             {
-            case Event::KeyPressed:
-                if (event.key.code == Keyboard::Left) {
-                    moveRec.x = -timePointer;
+                // События выбра пунктов меню
+                if (event.key.code == Keyboard::Up) { mymenu.MoveUp(); }      // вверх
+                if (event.key.code == Keyboard::Down) { mymenu.MoveDown(); }  // вниз
+                if (event.key.code == Keyboard::Return)                       // ввод
+                {
+                    // Переходим на выбранный пункт меню
+                    switch (mymenu.getSelectedMenuNumber())
+                    {
+                    case 0:ArrowFirst(); break;    // первая игра
+                    case 1:FireFighter(); break;
+                    case 2:window.close(); break;
+                    default:break;
+                    }
                 }
-                if (event.key.code == Keyboard::Right) {
-                    moveRec.x = timePointer;
-                }
-                if (event.key.code == Keyboard::Up) {
-                    moveRec.y = -timePointer;
-                }
-                if (event.key.code == Keyboard::Down) {
-                    moveRec.y = timePointer;
-                }
-                break;
-            case Event::KeyReleased:
-                if (event.key.code == Keyboard::Left || event.key.code == Keyboard::Right) {
-                    moveRec.x = 0;
-                }
-                if (event.key.code == Keyboard::Up || event.key.code == Keyboard::Down) {
-                    moveRec.y = 0;
-                }
-                break;
-            default:
-                break;
             }
         }
-        pointer.move(moveRec);
-        pos = pointer.getPosition();
-        if (pos.x > win_w - item_size * 2) pointer.setPosition(win_w - item_size * 2, pos.y);
-        if (pos.x < 0) pointer.setPosition(0, pos.y);
-        if (pos.y > win_h - item_size * 2) pointer.setPosition(pos.x, win_h - item_size * 2);
-        if (pos.y < 0) pointer.setPosition(pos.x, 0);
-        if (sqrt(pow((target_pos.x - pos.x), 2) + pow((target_pos.y - pos.y), 2)) < item_size / 2 ) {
-            is_goal = true;
-        }
-        else {
-            is_goal = false;
-        }
 
-
-        win.clear();
-        if (is_goal) {
-            win.draw(starGood);
-            win.draw(signGood);
-            soundGood.play();
-        }
-        else {
-            win.draw(target);
-            win.draw(pointer);
-        }
-        win.display();
-        if (is_goal) {
-            sleep(4);
-            is_goal = false;
-            pointer.setPosition((win_w - item_size)/ 2,(win_h - item_size)/ 2);
-            target_pos.x = rand() % (win_w - item_size * 2);
-            target_pos.y = rand() % (win_h - item_size * 2);
-            target.setPosition(target_pos.x, target_pos.y);
-        }
+        // Область отрисовки объектов      
+        window.clear();
+        mymenu.draw();
+        window.display();
     }
-
     return 0;
+
 }
