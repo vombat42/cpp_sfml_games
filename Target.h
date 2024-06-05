@@ -16,10 +16,11 @@ using namespace sf;
 class Target
 {
 public:
-    Sprite target;
 
     Target(int size, int weight, int height, std::string const& name_texture,  std::string const& file_texture, int x, int y, int dx, int dy);  // конструктор объекта
     ~Target();
+
+    Sprite getSprite() { return this->target; }
 
     void Update(Time const& dt) {
         animator.Update(dt);
@@ -35,16 +36,18 @@ public:
         return this->goal_pos;
     }
 
+    void setGoalPosition() {
+        this->goal_pos = this->pos + Vector2i(static_cast<float>(this->delta.x) * this->koef, static_cast<float>(this->delta.y) * this->koef);
+    }
+
     void setPosition(Vector2i p) {
-        this->pos.x = p.x;
-        this->pos.y = p.y;
-        this->goal_pos.x = p.x + static_cast<float>(this->delta.x) * this->koef;
-        this->goal_pos.y = p.y + static_cast<float>(this->delta.y) * this->koef;
-        target.setPosition(this->pos.x, this->pos.y);
+        this->pos = p;
+        this->setGoalPosition();
+        target.setPosition(p.x, p.y);
     }
 
     bool is_target(Vector2f p) {
-        if ((abs(this->goal_pos.x - p.x) < this->w / 4) && (p.y - this->goal_pos.y) < this->h / 6 && p.y > this->goal_pos.y) {
+        if (abs(this->goal_pos.x - p.x) < this->w / 4 && (p.y - this->goal_pos.y) < this->h / 6 && p.y > this->goal_pos.y) {
             return true;
         }
         return false;
@@ -52,6 +55,7 @@ public:
 
 
 private:
+    Sprite target;
     Vector2i pos; // позиция в окне
     Vector2i goal_pos; // целевая точка
     Vector2i delta; // позиция целевой точки относительно позиции

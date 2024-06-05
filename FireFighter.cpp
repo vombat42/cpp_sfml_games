@@ -10,12 +10,10 @@
 using namespace sf;
 
 int FireFighter() {
-    AssetManager manager;
-
     srand(time(NULL));
     int win_w, win_h;
     const int item_size = 140;
-    const int speed = 1;
+    const int speed = 2;
 
     RenderWindow win;
     win.create(VideoMode::getDesktopMode(), L"Наведи на цель", Style::Fullscreen);
@@ -44,12 +42,19 @@ int FireFighter() {
     signGood.setTexture(TextureSignGood);
 
     // звук молодец
-    SoundBuffer buffer; 
-    buffer.loadFromFile("audio/good.ogg");
+    SoundBuffer bufferGood; 
+    bufferGood.loadFromFile("audio/good.ogg");
     Sound soundGood;
-    soundGood.setBuffer(buffer);
+    soundGood.setBuffer(bufferGood);
 
-    Vector2f moveRec, pos, target_pos;
+    // звук тушения
+    SoundBuffer bufferPshh; 
+    bufferPshh.loadFromFile("audio/pshhh.ogg");
+    Sound soundPshhh;
+    soundPshhh.setBuffer(bufferPshh);
+
+
+    Vector2f moveRec, pos;
 
     // Указатель
     int bailer_w = 385;
@@ -63,37 +68,15 @@ int FireFighter() {
     pointer.setScale(koef, koef);
     float p_dx = static_cast<float>(bailer_w) / 5 * koef;
     float p_dy = static_cast<float>(bailer_h) * koef;
-    // p_dx=0;
-    // p_dy=0;
-
 
     // Цели
-    int num = 3;
+    int num = 5;
     int flame_w = 180;
     int flame_h = 200;
     Target* goals[num];
     for (int i = 0; i < num; ++i) {
-        goals[i] = new Target(item_size, flame_w, flame_h, "flame", "img/flame.png", rand() % (win_w - item_size * 2), rand() % (win_h - item_size * 2), 90, 130);
+        goals[i] = new Target(item_size, flame_w, flame_h, "flame", "img/flame.png", rand() % (win_w - item_size * 2) + item_size, rand() % (win_h - item_size * 2) + item_size, 90, 130);
     } 
-
-
-    // Цель
-    // Анимация костра
-    // int fire_w = 180;
-    // int fire_h = 200;
-    // Vector2i spriteSize(fire_w, fire_h);
-    // Sprite target;
-    // koef =  (static_cast<float>(item_size) / static_cast<float>(fire_h));
-    // target.setScale(koef, koef);
-
-    // target_pos.x = rand() % (win_w - item_size * 2);
-    // target_pos.y = rand() % (win_h - item_size * 2);
-    // target.setPosition(target_pos.x, target_pos.y);
-
-    // Animator animator(target);
-    // auto& fireAnimation = animator.CreateAnimation("flame", "img/flame.png", seconds(1), true);
-    // fireAnimation.AddFrames(Vector2i(0, 0), spriteSize, 3, 2);
-
 
 
     Clock clock;
@@ -106,7 +89,6 @@ int FireFighter() {
         Event event;
         time = clock.getElapsedTime().asMicroseconds();
         timePointer = time / 6000 * speed;
-        // clock.restart();
 
         while (win.pollEvent(event))
         {
@@ -149,21 +131,17 @@ int FireFighter() {
 
         pointer.move(moveRec);
         pos = pointer.getPosition();
-        if (pos.x > win_w - item_size * 2) pointer.setPosition(win_w - item_size * 2, pos.y);
+        if (pos.x > win_w - item_size) pointer.setPosition(win_w - item_size, pos.y);
         if (pos.x < 0) pointer.setPosition(0, pos.y);
-        if (pos.y > win_h - item_size * 2) pointer.setPosition(pos.x, win_h - item_size * 2);
+        if (pos.y > win_h - item_size) pointer.setPosition(pos.x, win_h - item_size);
         if (pos.y < 0) pointer.setPosition(pos.x, 0);
-        // if (sqrt(pow((target_pos.x - pos.x), 2) + pow((target_pos.y - pos.y), 2)) < item_size / 2 ) {
-        //     is_goal = true;
-        // }
-        // else {
-        //     is_goal = false;
-        // }
+
         is_goal = true;
         for (int i = 0; i < num; ++i) {
             if (goals[i]->getStatus()) {
                 if (goals[i]->is_target(Vector2f(pos.x + p_dx, pos.y + p_dy))) {
                     goals[i]->setStatus(false);
+                    soundPshhh.play();
                 }
                 else {
                     is_goal = false;
@@ -175,23 +153,19 @@ int FireFighter() {
         if (is_goal) {
             win.draw(starGood);
             win.draw(signGood);
+            soundPshhh.stop();
             soundGood.play();
         }
         else {
             // Обновление анимации
             Time deltaTime = clock.restart();
-            // animator.Update(deltaTime);
-            // win.draw(target);
-            win.draw(pointer);
             for (int i = 0; i < num; ++i) {
                 if (goals[i]->getStatus()) {
-                    if (goals[i]->is_target(Vector2f(pos.x + p_dx, pos.y + p_dy))) {
-                        goals[i]->setStatus(false);
-                    }
                     goals[i]->Update(deltaTime);
-                    win.draw(goals[i]->target);
+                    win.draw(goals[i]->getSprite());
                 }
             }    
+            win.draw(pointer);
         }
         win.display();
 
@@ -201,11 +175,8 @@ int FireFighter() {
             pointer.setPosition((win_w - item_size)/ 2,(win_h - item_size)/ 2);
             for (int i = 0; i < num; ++i) {
                 goals[i]->setStatus(true);
-                goals[i]->setPosition(Vector2i(rand() % (win_w - item_size * 2), rand() % (win_h - item_size * 2)));
+                goals[i]->setPosition(Vector2i(rand() % (win_w - item_size * 2) + item_size, rand() % (win_h - item_size * 2) + item_size));
             }  
-            // target_pos.x = rand() % (win_w - item_size * 2);
-            // target_pos.y = rand() % (win_h - item_size * 2);
-            // target.setPosition(target_pos.x, target_pos.y);
         }
     }
 

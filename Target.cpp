@@ -5,9 +5,9 @@ Target::Target(int size, int weight, int height, std::string const& name_texture
 {
     koef = static_cast<float>(size) / static_cast<float>(h);
     target.setScale(koef, koef);
-    goal_pos.x = x + static_cast<float>(dx) * koef;
-    goal_pos.y = y + static_cast<float>(dy) * koef;
-    target.setPosition(pos.x, pos.y);
+    delta = Vector2i(dx, dy);
+    this->setGoalPosition();
+    target.setPosition(x, y);
     auto& targetAnimation = animator.CreateAnimation(name_texture, file_texture, seconds(1), true);
     targetAnimation.AddFrames(Vector2i(0, 0), Vector2i(w, h), 3, 2);
 }

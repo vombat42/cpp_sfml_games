@@ -13,6 +13,8 @@ using namespace sf;
 
 int main(int argc, char const *argv[])
 {
+    AssetManager manager;
+
     // Создаём окно windows
     RenderWindow window;
     window.create(VideoMode::getDesktopMode(), L"Моя игра", Style::Fullscreen);
