@@ -5,7 +5,7 @@
 
 #include "AssetManager.h"
 #include "Animator.h"
-
+#include "Target.h"
 
 using namespace sf;
 
@@ -61,25 +61,38 @@ int FireFighter() {
     pointer.setTexture(TexturePointer);
     float koef =  (static_cast<float>(item_size) / static_cast<float>(bailer_h));
     pointer.setScale(koef, koef);
+    float p_dx = static_cast<float>(bailer_w) / 5 * koef;
+    float p_dy = static_cast<float>(bailer_h) * koef;
+    // p_dx=0;
+    // p_dy=0;
 
+
+    // Цели
+    int num = 3;
+    int flame_w = 180;
+    int flame_h = 200;
+    Target* goals[num];
+    for (int i = 0; i < num; ++i) {
+        goals[i] = new Target(item_size, flame_w, flame_h, "flame", "img/flame.png", rand() % (win_w - item_size * 2), rand() % (win_h - item_size * 2), 90, 130);
+    } 
 
 
     // Цель
     // Анимация костра
-    int fire_w = 180;
-    int fire_h = 200;
-    Vector2i spriteSize(fire_w, fire_h);
-    Sprite target;
-    koef =  (static_cast<float>(item_size) / static_cast<float>(fire_h));
-    target.setScale(koef, koef);
+    // int fire_w = 180;
+    // int fire_h = 200;
+    // Vector2i spriteSize(fire_w, fire_h);
+    // Sprite target;
+    // koef =  (static_cast<float>(item_size) / static_cast<float>(fire_h));
+    // target.setScale(koef, koef);
 
-    target_pos.x = rand() % (win_w - item_size * 2);
-    target_pos.y = rand() % (win_h - item_size * 2);
-    target.setPosition(target_pos.x, target_pos.y);
+    // target_pos.x = rand() % (win_w - item_size * 2);
+    // target_pos.y = rand() % (win_h - item_size * 2);
+    // target.setPosition(target_pos.x, target_pos.y);
 
-    Animator animator(target);
-    auto& fireAnimation = animator.CreateAnimation("flame", "img/flame.png", seconds(1), true);
-    fireAnimation.AddFrames(Vector2i(0, 0), spriteSize, 3, 2);
+    // Animator animator(target);
+    // auto& fireAnimation = animator.CreateAnimation("flame", "img/flame.png", seconds(1), true);
+    // fireAnimation.AddFrames(Vector2i(0, 0), spriteSize, 3, 2);
 
 
 
@@ -140,13 +153,23 @@ int FireFighter() {
         if (pos.x < 0) pointer.setPosition(0, pos.y);
         if (pos.y > win_h - item_size * 2) pointer.setPosition(pos.x, win_h - item_size * 2);
         if (pos.y < 0) pointer.setPosition(pos.x, 0);
-        if (sqrt(pow((target_pos.x - pos.x), 2) + pow((target_pos.y - pos.y), 2)) < item_size / 2 ) {
-            is_goal = true;
-        }
-        else {
-            is_goal = false;
-        }
-
+        // if (sqrt(pow((target_pos.x - pos.x), 2) + pow((target_pos.y - pos.y), 2)) < item_size / 2 ) {
+        //     is_goal = true;
+        // }
+        // else {
+        //     is_goal = false;
+        // }
+        is_goal = true;
+        for (int i = 0; i < num; ++i) {
+            if (goals[i]->getStatus()) {
+                if (goals[i]->is_target(Vector2f(pos.x + p_dx, pos.y + p_dy))) {
+                    goals[i]->setStatus(false);
+                }
+                else {
+                    is_goal = false;
+                }
+            }
+        }    
 
         win.clear();
         if (is_goal) {
@@ -157,9 +180,18 @@ int FireFighter() {
         else {
             // Обновление анимации
             Time deltaTime = clock.restart();
-            animator.Update(deltaTime);
-            win.draw(target);
+            // animator.Update(deltaTime);
+            // win.draw(target);
             win.draw(pointer);
+            for (int i = 0; i < num; ++i) {
+                if (goals[i]->getStatus()) {
+                    if (goals[i]->is_target(Vector2f(pos.x + p_dx, pos.y + p_dy))) {
+                        goals[i]->setStatus(false);
+                    }
+                    goals[i]->Update(deltaTime);
+                    win.draw(goals[i]->target);
+                }
+            }    
         }
         win.display();
 
@@ -167,9 +199,13 @@ int FireFighter() {
             sleep(3);
             is_goal = false;
             pointer.setPosition((win_w - item_size)/ 2,(win_h - item_size)/ 2);
-            target_pos.x = rand() % (win_w - item_size * 2);
-            target_pos.y = rand() % (win_h - item_size * 2);
-            target.setPosition(target_pos.x, target_pos.y);
+            for (int i = 0; i < num; ++i) {
+                goals[i]->setStatus(true);
+                goals[i]->setPosition(Vector2i(rand() % (win_w - item_size * 2), rand() % (win_h - item_size * 2)));
+            }  
+            // target_pos.x = rand() % (win_w - item_size * 2);
+            // target_pos.y = rand() % (win_h - item_size * 2);
+            // target.setPosition(target_pos.x, target_pos.y);
         }
     }
 
