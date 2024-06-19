@@ -8,6 +8,7 @@
 #include "ArrowFirst.cpp"
 #include "FireFighter.cpp"
 #include "CarWay.cpp"
+#include "Words_1.cpp"
 
 
 using namespace sf;
@@ -25,7 +26,7 @@ int main(int argc, char const *argv[])
     auto height = static_cast<float>(VideoMode::getDesktopMode().height);
 
     // Название пунктов меню
-    std::vector<String> name_menu{ L"\"Наведи на цель\"",L"\"Пожарный\"", L"\"Машинка\"", L"Выход" };
+    std::vector<String> name_menu{ L"\"Наведи на цель\"",L"\"Пожарный\"", L"\"Машинка\"", L"\"Слова\"", L"Выход" };
 
     // Объект меню
     StartMenu mymenu(window, 900, 300, 100, 120, name_menu);
@@ -56,7 +57,8 @@ int main(int argc, char const *argv[])
                     case 0:ArrowFirst(); break;    // первая игра
                     case 1:FireFighter(); break;
                     case 2:CarWay(); break;
-                    case 3:window.close(); break;
+                    case 3:Words_1(); break;
+                    case 4:window.close(); break;
                     default:break;
                     }
                 }
