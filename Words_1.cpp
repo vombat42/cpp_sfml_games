@@ -2,28 +2,22 @@
 #include <SFML/Audio.hpp>
 #include <unistd.h>
 
-
 #include "Word.h"
+
 
 using namespace sf;
 
 
 int Words_1() {
-
-    const int item_size = 200;
-    const int speed = 2;
-    const int road_w = 100;
-    srand(time(NULL));
-    int win_w, win_h;
-
     RenderWindow win;
     win.create(VideoMode::getDesktopMode(), L"Слова 1", Style::Fullscreen);
     win.setMouseCursorVisible(false); //отключаем видимость курсора
     win.setPosition(Vector2i(0, 0));
     // Размер экрана
-    win_w = static_cast<int>(VideoMode::getDesktopMode().width);
-    win_h = static_cast<int>(VideoMode::getDesktopMode().height);
+    int win_w = static_cast<int>(VideoMode::getDesktopMode().width);
+    int win_h = static_cast<int>(VideoMode::getDesktopMode().height);
 
+    // фон
     RectangleShape background(Vector2f(win_w, win_h));
     Texture texture_wood;
     background.setTextureRect(IntRect(0,0, win_w, win_h));
@@ -32,7 +26,14 @@ int Words_1() {
     background.setTexture(&texture_wood);
 
 
-    // Звездочка молодец
+// вспомогательная линия
+sf::Vertex line[] =
+{
+    sf::Vertex(sf::Vector2f(win_w/2, 0)),
+    sf::Vertex(sf::Vector2f(win_w/2, win_h))
+};
+
+    // Спрайт молодец
     Texture TextureGood;
     TextureGood.loadFromFile("img/word_good.png");
     Sprite wordGood;
@@ -46,30 +47,46 @@ int Words_1() {
     signGood.setPosition((win_w - 737) / 2, 50);
     signGood.setTexture(TextureSignGood);
 
-    // звук молодец
+    // звук умница
     SoundBuffer umnitsa; 
     umnitsa.loadFromFile("audio/umnitsa.ogg");
     Sound soundGood;
     soundGood.setBuffer(umnitsa);
 
-    // Слово
-    const String word = L"хеелебел";
-    std::string const audio_file = "audio/good.ogg";
-    std::string const texture_file = "img/хлеб.png";
-    Word slovo(win, 900, 300, 50, word, audio_file, texture_file);
+    // звук "напиши слово"
+    SoundBuffer write_word_buff; 
+    write_word_buff.loadFromFile("audio/напиши_слово.ogg");
+    Sound sound_write_word;
+    sound_write_word.setBuffer(write_word_buff);
 
+    // звук "давай продолжим"
+    SoundBuffer lets_continue_buff; 
+    lets_continue_buff.loadFromFile("audio/давай_продолжим.ogg");
+    Sound sound_lets_continue;
+    sound_lets_continue.setBuffer(lets_continue_buff);
 
-    Clock clock;
-    float time, timeCar;
+    // Слова
+    std::vector<Word*> word_list;                    // Динамический массив слов
+    int num = 0;
+    // Word* d = new Word(win, win_w / 2, 150, 150, word, audio_file, texture_file);
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ", "audio/дом.ogg", "img/дом.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА", "audio/вода.ogg", "img/вода.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg", "img/лимон.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ", "audio/стул.ogg", "img/стул.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ", "audio/хлеб.ogg", "img/хлеб.png"));
+    // word_list.push_back(new Word(win, win_w / 2, 150, 150, L"КОЛБАСА", "audio/колбаса.ogg", "img/колбаса.png"));
+
+    int num_max = word_list.size();
+    // std::cout << "kol-vo = " << num_max << std::endl;
 
     bool is_goal {false};
+    bool is_start {true};
+    bool is_event {true};
 
+   
     while (win.isOpen())
     {
         Event event;
-        time = clock.getElapsedTime().asMicroseconds();
-        timeCar = time / 6000 * speed;
-        clock.restart();
 
         while (win.pollEvent(event))
         {
@@ -80,45 +97,87 @@ int Words_1() {
             switch (event.type)
             {
             case Event::KeyPressed:
-                if (event.key.code == slovo.getKeyLetter()) {
-                    slovo.play();
-                    if (!slovo.nextLetter()) is_goal = true;
+                if (!is_event) {
+                    if (event.key.code == word_list[num]->getKeyLetter()) {
+                        if (!word_list[num]->nextLetter()) is_goal = true;
+                        is_event = true;
+                    }
                 }
                 if (event.key.code == Keyboard::Escape) {
                     win.close();
                 }
-                break;
-            case Event::KeyReleased:
-                // if (event.key.code == Keyboard::Left || event.key.code == Keyboard::Right || event.key.code == Keyboard::Up || event.key.code == Keyboard::Down) {
-                //     distance = 0;
-                //     soundMotor.pause();
-                // }
                 break;
             default:
                 break;
             }
         }
 
-        win.clear();
+        if (is_event) {
+            is_event = false;
+            win.clear();
 
-        if (is_goal) {
-            win.draw(background);
-            // win.draw(wordGood);
-            win.draw(signGood);
-            win.draw(slovo.getGoalSprite());
-            soundGood.play();
-        }
-        else {
-            win.draw(background);
-            slovo.draw();
-        }
+            if (is_goal) {
+                win.draw(background);
+                word_list[num]->draw_whole();
+                win.draw(word_list[num]->getGoalSprite());
+                
+                win.display();
+                
+                word_list[num]->play(); // звучание всего слова
 
-        win.display();
+            }
+            else {
+                if (is_start) {
+                    win.draw(background);
+                    word_list[num]->draw_whole();
+                    win.display();
+                    sound_write_word.play();
+                    while (sound_write_word.getStatus() == Sound::Playing) {
+                        sleep(milliseconds(500));
+                    }
+                    word_list[num]->play();
+                    sleep(milliseconds(1000));
+                    
+                    win.clear();
+                    win.draw(background);
+                    word_list[num]->draw();
+                    win.display();
+                    word_list[num]->play_letter(); // звучание текущей (первой) буквы в слове
+                    is_start = false;
+                }
+                else {
+                    win.draw(background);
+                    word_list[num]->draw();
+                    win.display();
+                    word_list[num]->play_letter(); // звучание текущей буквы в слове
+                }
+            }
 
-        if (is_goal) {
-            sleep(3);
-            is_goal = false;
-            slovo.restart();
+            // win.display();
+
+            if (is_goal) {
+                sleep(4);
+                is_goal = false;
+                is_start = true;
+                is_event = true;
+                if (++num >= num_max) {
+                    win.clear();
+                    win.draw(background);
+                    win.draw(wordGood);
+                    win.draw(signGood);
+                    win.display();
+                    soundGood.play();
+                    sleep(3);
+                    win.close();
+                }
+                else {
+                    sound_lets_continue.play();
+                    while (sound_lets_continue.getStatus() == Sound::Playing) {
+                        sleep(milliseconds(500));
+                    }
+                }
+            }
+
         }
     }
 
