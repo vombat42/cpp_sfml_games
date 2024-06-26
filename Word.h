@@ -19,8 +19,10 @@ public:
     void play();                                     // Произнести слово
     void play_letter();                              // Произнести текущую букву
     bool nextLetter();                               // Перемещение на следующую букву, true - если не конец слова, false - если конец слова
-    void restart();
-    sf::Sprite getGoalSprite(); // пока не используется
+    bool animate_letter(int delta);
+    // void restart();
+
+    sf::Sprite getGoalSprite(); // спрайт слова (изображение)
 
     // Цвет букв слова
     // void setLettersColor(sf::Color LCol, sf::Color CLCol);
@@ -76,6 +78,8 @@ private:
     // звук "нажми букву"
     sf::SoundBuffer press_letter_buff; 
     sf::Sound sound_press_letter;
+    sf::Time time_anim = sf::milliseconds(500);           // длительность анимации буквы
+
 
 
     // Настройка отображения букв (позиция, цвет, размер)

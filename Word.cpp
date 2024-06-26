@@ -18,7 +18,8 @@ void Word::setInitText(sf::Text& text, const sf::String& str, float xpos, float 
 Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF)
             : win(window), x(centerX), y(centerY), letter_list(word.getSize()), len(word.getSize()), size_font(fSize)
 {
-    if (!font.loadFromFile("font/Industry-Bold.ttf")) exit(32);
+    // if (!font.loadFromFile("font/Industry-Bold.ttf")) exit(32);
+    if (!font.loadFromFile("font/Waffle-Slab2.otf")) exit(32);
     zvuk_buffer.loadFromFile(audioF);
     zvuk.setBuffer(zvuk_buffer);
     texture.loadFromFile(textureF);
@@ -103,14 +104,29 @@ bool Word::nextLetter()
     return true;
 }
 
-void Word::restart()
+bool Word::animate_letter(int delta)
 {
-    letter_list[current_letter_num - 1].setFillColor(letter_color);
-    letter_list[current_letter_num - 1].setCharacterSize(size_font);
-    current_letter_num = 0;
-    letter_list[current_letter_num].setFillColor(current_letter_color);
-    // letter_list[current_letter_num].setCharacterSize(size_font * 2);
+    if (delta >= this->time_anim.asMilliseconds()) {
+        current_letter.setCharacterSize(size_font * 4);
+        // current_letter.setPosition(0, 0);
+        return true;
+    }
+
+    int s;
+    s = size_font * (4 - 3 * delta / this->time_anim.asMilliseconds());
+    // current_letter.setPosition(0, 0);
+    current_letter.setCharacterSize(s);
+    return false;
 }
+
+// void Word::restart()
+// {
+//     letter_list[current_letter_num - 1].setFillColor(letter_color);
+//     letter_list[current_letter_num - 1].setCharacterSize(size_font);
+//     current_letter_num = 0;
+//     letter_list[current_letter_num].setFillColor(current_letter_color);
+//     // letter_list[current_letter_num].setCharacterSize(size_font * 2);
+// }
 
 sf::Sprite Word::getGoalSprite()
 {

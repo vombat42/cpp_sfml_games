@@ -65,29 +65,48 @@ sf::Vertex line[] =
     Sound sound_lets_continue;
     sound_lets_continue.setBuffer(lets_continue_buff);
 
+    // звук верного нажатия
+    SoundBuffer good_press_buff; 
+    good_press_buff.loadFromFile("audio/good_press.ogg");
+    Sound sound_good_press;
+    sound_good_press.setBuffer(good_press_buff);
+
+    // звук ошибочного нажатия
+    SoundBuffer bad_press_buff; 
+    bad_press_buff.loadFromFile("audio/bad_press.ogg");
+    Sound sound_bad_press;
+    sound_bad_press.setBuffer(bad_press_buff);
+
     // Слова
     std::vector<Word*> word_list;                    // Динамический массив слов
     int num = 0;
     // Word* d = new Word(win, win_w / 2, 150, 150, word, audio_file, texture_file);
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ", "audio/дом.ogg", "img/дом.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА", "audio/вода.ogg", "img/вода.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg", "img/лимон.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ", "audio/стул.ogg", "img/стул.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ", "audio/хлеб.ogg", "img/хлеб.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ",   "audio/дом.ogg",    "img/дом.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"МАМА",  "audio/мама.ogg",   "img/мама.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА",  "audio/вода.ogg",   "img/вода.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ПАПА",  "audio/папа.ogg",   "img/папа.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg",  "img/лимон.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ",  "audio/стул.ogg",   "img/стул.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ",  "audio/хлеб.ogg",   "img/хлеб.png"));
     // word_list.push_back(new Word(win, win_w / 2, 150, 150, L"КОЛБАСА", "audio/колбаса.ogg", "img/колбаса.png"));
 
     int num_max = word_list.size();
     // std::cout << "kol-vo = " << num_max << std::endl;
 
-    bool is_goal {false};
-    bool is_start {true};
-    bool is_event {true};
+    bool is_goal {false}; // слово написано полностью
+    bool is_start {true}; // начало слова (первая буква)
+    bool is_event {true}; // ожидается нажатие клавиши (не происходит анимации, пауз и звуковых подсказок)
 
-   
+    Clock clock;
+    int time; // miliseconds
+
+
     while (win.isOpen())
     {
         Event event;
+        time = clock.getElapsedTime().asMilliseconds();
 
+        // if (!is_event) {
         while (win.pollEvent(event))
         {
             if(event.type == Event::Closed){
@@ -97,22 +116,32 @@ sf::Vertex line[] =
             switch (event.type)
             {
             case Event::KeyPressed:
-                if (!is_event) {
-                    if (event.key.code == word_list[num]->getKeyLetter()) {
-                        if (!word_list[num]->nextLetter()) is_goal = true;
-                        is_event = true;
-                    }
-                }
                 if (event.key.code == Keyboard::Escape) {
                     win.close();
+                }
+                if (!is_event) {
+                    if (event.key.code == word_list[num]->getKeyLetter()) {
+                        sound_good_press.play();
+                        is_event = true;
+                        if (!word_list[num]->nextLetter()) is_goal = true;
+                    }
+                    else
+                    {
+                        sound_bad_press.play();
+                    }
                 }
                 break;
             default:
                 break;
             }
         }
+        // }
 
         if (is_event) {
+            // if (word_list[num]->animate_letter(time)) {
+            //     if (!word_list[num]->nextLetter()) is_goal = true;
+            //     is_event = true;
+            // }
             is_event = false;
             win.clear();
 
@@ -122,7 +151,7 @@ sf::Vertex line[] =
                 win.draw(word_list[num]->getGoalSprite());
                 
                 win.display();
-                
+                sleep(seconds(1));
                 word_list[num]->play(); // звучание всего слова
 
             }
@@ -156,7 +185,7 @@ sf::Vertex line[] =
             // win.display();
 
             if (is_goal) {
-                sleep(4);
+                sleep(seconds(3));
                 is_goal = false;
                 is_start = true;
                 is_event = true;
@@ -167,7 +196,7 @@ sf::Vertex line[] =
                     win.draw(signGood);
                     win.display();
                     soundGood.play();
-                    sleep(3);
+                    sleep(seconds(3));
                     win.close();
                 }
                 else {
