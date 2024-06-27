@@ -14,15 +14,32 @@ void Word::setInitText(sf::Text& text, const sf::String& str, float xpos, float 
 	text.setOutlineColor(letter_color);
 }
 
-Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF)
-            : win(window), x(centerX), y(centerY), letter_list(word.getSize()), len(word.getSize()), size_font(fSize)
+
+Word::Word(sf::RenderWindow& window) : win(window) { }
+
+// Word::~Word(){ }
+
+void Word::setParams(float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF)
 {
+    x = centerX;
+    y = centerY;
+    size_font = fSize;
+    len = word.getSize();
+
+    while ( !letter_list.empty() ) {
+    letter_list.pop_back();
+    }
+    for (int i = 0; i < len; i++) {
+		letter_list.push_back({});
+    }
+
+
     if (!font.loadFromFile("font/Waffle-Slab2.otf")) exit(32);
     zvuk_buffer.loadFromFile(audioF);
     zvuk.setBuffer(zvuk_buffer);
     texture.loadFromFile(textureF);
     sprite.setPosition((win.getSize().x - texture.getSize().x ) / 2, (win.getSize().y - texture.getSize().y) / 2);
-    sprite.setTexture(texture);
+    sprite.setTexture(texture, true);
 
     setInitText(letter_list[0], word[0], 0, 0); // просто чтоб получить ширину буквы, для центрирования слова
     x = (win.getSize().x - ((len - 1) * 1 * size_font + letter_list[0].getLocalBounds().width)) / 2; // центрируем слов по горизонтали
@@ -40,7 +57,7 @@ Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, co
 
     // настройка текущей буквы
 	current_letter_num = 0;
-    setInitText(current_letter, word[current_letter_num], window.getSize().x / 2, y + size_font);
+    setInitText(current_letter, word[current_letter_num], win.getSize().x / 2, y + size_font);
     current_letter.setFillColor(letter_color);
     current_letter.setCharacterSize(size_font * 4);
     current_letter.setPosition(current_letter.getPosition().x - current_letter.getLocalBounds().width / 2, current_letter.getPosition().y);
@@ -49,9 +66,6 @@ Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, co
 	letter_list[current_letter_num].setFillColor(current_letter_color);
 }
 
-Word::~Word()
-{
-}
 
 void Word::draw()
 {

@@ -18,6 +18,12 @@ enum status {
     finish,
 };
 
+struct word_data {
+    String const word;
+    std::string const audioF;
+    std::string const textureF;
+};
+
 int Words_1() {
     RenderWindow win;
     win.create(VideoMode::getDesktopMode(), L"Слова 1", Style::Fullscreen);
@@ -86,18 +92,20 @@ int Words_1() {
     sound_bad_press.setBuffer(bad_press_buff);
 
     // Слова
-    std::vector<Word*> word_list;                    // Динамический массив слов
+    std::vector<word_data> words;                    // Динамический массив слов
     int num = 0;
-    // word_list.push_back(new Word(win, win_w / 2, 150, 150, L"КОЛБАСА", "audio/колбаса.ogg", "img/колбаса.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ",   "audio/дом.ogg",    "img/дом.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА",  "audio/вода.ogg",   "img/вода.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"МАМА",  "audio/мама.ogg",   "img/мама.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ",  "audio/хлеб.ogg",   "img/хлеб.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ПАПА",  "audio/папа.ogg",   "img/папа.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ",  "audio/стул.ogg",   "img/стул.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg",  "img/лимон.png"));
+    words.push_back({L"МАМА",  "audio/мама.ogg",   "img/мама.png"});
+    words.push_back({L"ДОМ",   "audio/дом.ogg",    "img/дом.png"});
+    words.push_back({L"ВОДА",  "audio/вода.ogg",   "img/вода.png"});
+    words.push_back({L"ХЛЕБ",  "audio/хлеб.ogg",   "img/хлеб.png"});
+    words.push_back({L"ПАПА",  "audio/папа.ogg",   "img/папа.png"});
+    words.push_back({L"СТУЛ",  "audio/стул.ogg",   "img/стул.png"});
+    words.push_back({L"ЛИМОН", "audio/лимон.ogg",  "img/лимон.png"});
+    // words.push_back({L"КОЛБАСА", "audio/колбаса.ogg", "img/колбаса.png"});
+    Word* word = new Word(win);
+    word->setParams(win_w / 2, 150, 150, words[num].word, words[num].audioF, words[num].textureF);
 
-    int num_max = word_list.size();
+    int num_max = words.size();
 
     Clock clock;
     float time {0}; // miliseconds
@@ -108,19 +116,19 @@ int Words_1() {
     while (win.isOpen())
     {
         Event event_words;
-        // while (win.pollEvent(event_words)){} // цикл опроса событий для служебных нужд окна
+        while (win.pollEvent(event_words)){} // цикл опроса событий для служебных нужд окна
         switch (current_status)
         {
         case start_word: // -----------------------------------------
             win.clear();
             win.draw(background);
-            word_list[num]->draw_whole();
+            word->draw_whole();
             win.display();
             sound_write_word.play();
             while (sound_write_word.getStatus() == Sound::Playing) {
                 sleep(milliseconds(500));
             }
-            word_list[num]->play();
+            word->play();
             sleep(milliseconds(1000));
             
             current_status = letter_run;
@@ -136,7 +144,7 @@ int Words_1() {
                     if (event_words.key.code == Keyboard::Escape) {
                         win.close();
                     }
-                    if (event_words.key.code == word_list[num]->getKeyLetter()) {
+                    if (event_words.key.code == word->getKeyLetter()) {
                         current_status = letter_pressed;
                         clock.restart();
                     }
@@ -150,11 +158,11 @@ int Words_1() {
             break;
         case letter_pressed: // -----------------------------------------
             sound_good_press.play();
-            while (word_list[num]->animate_letter(time)) {
+            while (word->animate_letter(time)) {
                 time = clock.getElapsedTime().asMilliseconds();
                 win.clear();
                 win.draw(background);
-                word_list[num]->draw();
+                word->draw();
                 win.display();
                 sleep(milliseconds(5));
             }
@@ -162,7 +170,7 @@ int Words_1() {
             current_status = letter_done;
             break;
         case letter_done: // -----------------------------------------
-            if (!word_list[num]->nextLetter()) {
+            if (!word->nextLetter()) {
                 current_status = done_word;
             }
             else {
@@ -172,7 +180,7 @@ int Words_1() {
         case letter_run: // -----------------------------------------
             win.clear();
             win.draw(background);
-            word_list[num]->draw();
+            word->draw();
             win.display();
 
             sound_press_letter.play();
@@ -180,18 +188,18 @@ int Words_1() {
                 sf::sleep(sf::milliseconds(100));
             }
 
-            word_list[num]->play_letter(); // звучание текущей буквы в слове
+            word->play_letter(); // звучание текущей буквы в слове
             current_status = wait_press;
             break;
         case done_word: // -----------------------------------------
             win.clear();
             win.draw(background);
-            word_list[num]->draw_whole();
-            win.draw(word_list[num]->getGoalSprite());
+            word->draw_whole();
+            win.draw(word->getGoalSprite());
             
             win.display();
             sleep(seconds(1));
-            word_list[num]->play(); // звучание всего слова
+            word->play(); // звучание всего слова
 
             sleep(seconds(3));
 
@@ -203,6 +211,7 @@ int Words_1() {
                 while (sound_lets_continue.getStatus() == Sound::Playing) {
                     sleep(milliseconds(500));
                 }
+                word->setParams(win_w / 2, 150, 150, words[num].word, words[num].audioF, words[num].textureF);
                 current_status = start_word;
             }
             break;

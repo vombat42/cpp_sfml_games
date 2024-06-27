@@ -12,9 +12,10 @@
 class Word
 {
 public:
-    Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF);
-    ~Word();
+    Word(sf::RenderWindow& window);
+    // ~Word();
 
+    void setParams(float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF);
     void draw();                                     // Пишем слово
     void draw_whole();                               // Пишем слово целиком
     void play();                                     // Произнести слово
