@@ -8,6 +8,7 @@
 #include <iostream>
 #include <unistd.h>
 
+
 class Word
 {
 public:
@@ -19,14 +20,8 @@ public:
     void play();                                     // Произнести слово
     void play_letter();                              // Произнести текущую букву
     bool nextLetter();                               // Перемещение на следующую букву, true - если не конец слова, false - если конец слова
-    bool animate_letter(int delta);
-    // void restart();
-
+    bool animate_letter(float delta);
     sf::Sprite getGoalSprite(); // спрайт слова (изображение)
-
-    // Цвет букв слова
-    // void setLettersColor(sf::Color LCol, sf::Color CLCol);
-
     sf::Keyboard::Key getKeyLetter();               // Возвращает код клавиши для текущей буквы
 
 private:
@@ -64,7 +59,8 @@ private:
     int current_letter_num;                               // Номер текущей буквы в слове 
     sf::Font font;                                        // Шрифт букв 
     std::vector<sf::Text> letter_list;                    // Динамический массив букв
-    sf::Text current_letter;                              // Текущая буква
+    sf::Text current_letter;                              // Текущая буква (крупная)
+    sf::Vector2f current_letter_pos;                      // Позиция текущей бувы (крупной)
     sf::Text whole_word;                                  // Слово целиком (для отображения после написания слова)
     sf::SoundBuffer zvuk_buffer;                          // звук слова (буффер)
     sf::Sound zvuk;                                       // звук слова
@@ -75,12 +71,7 @@ private:
     sf::Color letter_color= sf::Color::Green;             // Цвет букв
     sf::Color current_letter_color = sf::Color::Yellow;   // Цвет текущей буквы
     sf::RenderWindow& win;                                // Ссылка на графическое окно
-    // звук "нажми букву"
-    sf::SoundBuffer press_letter_buff; 
-    sf::Sound sound_press_letter;
-    sf::Time time_anim = sf::milliseconds(500);           // длительность анимации буквы
-
-
+    float time_anim = 1500;                               // длительность анимации буквы
 
     // Настройка отображения букв (позиция, цвет, размер)
     void setInitText(sf::Text& text, const sf::String& str, float xpos, float ypos) const;

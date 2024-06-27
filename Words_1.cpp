@@ -8,6 +8,16 @@
 using namespace sf;
 
 
+enum status {
+    start_word,
+    letter_run,
+    wait_press,
+    letter_pressed,
+    letter_done,
+    done_word,
+    finish,
+};
+
 int Words_1() {
     RenderWindow win;
     win.create(VideoMode::getDesktopMode(), L"Слова 1", Style::Fullscreen);
@@ -24,14 +34,6 @@ int Words_1() {
     if (!texture_wood.loadFromFile("img/wood_1.jpg")) exit(2);
     texture_wood.setRepeated(true);
     background.setTexture(&texture_wood);
-
-
-// вспомогательная линия
-sf::Vertex line[] =
-{
-    sf::Vertex(sf::Vector2f(win_w/2, 0)),
-    sf::Vertex(sf::Vector2f(win_w/2, win_h))
-};
 
     // Спрайт молодец
     Texture TextureGood;
@@ -65,6 +67,12 @@ sf::Vertex line[] =
     Sound sound_lets_continue;
     sound_lets_continue.setBuffer(lets_continue_buff);
 
+    // звук "нажми букву"
+    SoundBuffer press_letter_buff; 
+    press_letter_buff.loadFromFile("audio/нажми_букву.ogg");
+    Sound sound_press_letter;
+    sound_press_letter.setBuffer(press_letter_buff);
+
     // звук верного нажатия
     SoundBuffer good_press_buff; 
     good_press_buff.loadFromFile("audio/good_press.ogg");
@@ -80,133 +88,136 @@ sf::Vertex line[] =
     // Слова
     std::vector<Word*> word_list;                    // Динамический массив слов
     int num = 0;
-    // Word* d = new Word(win, win_w / 2, 150, 150, word, audio_file, texture_file);
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ",   "audio/дом.ogg",    "img/дом.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"МАМА",  "audio/мама.ogg",   "img/мама.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА",  "audio/вода.ogg",   "img/вода.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ПАПА",  "audio/папа.ogg",   "img/папа.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg",  "img/лимон.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ",  "audio/стул.ogg",   "img/стул.png"));
-    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ",  "audio/хлеб.ogg",   "img/хлеб.png"));
     // word_list.push_back(new Word(win, win_w / 2, 150, 150, L"КОЛБАСА", "audio/колбаса.ogg", "img/колбаса.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ДОМ",   "audio/дом.ogg",    "img/дом.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ВОДА",  "audio/вода.ogg",   "img/вода.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"МАМА",  "audio/мама.ogg",   "img/мама.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ХЛЕБ",  "audio/хлеб.ogg",   "img/хлеб.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ПАПА",  "audio/папа.ogg",   "img/папа.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"СТУЛ",  "audio/стул.ogg",   "img/стул.png"));
+    word_list.push_back(new Word(win, win_w / 2, 150, 150, L"ЛИМОН", "audio/лимон.ogg",  "img/лимон.png"));
 
     int num_max = word_list.size();
-    // std::cout << "kol-vo = " << num_max << std::endl;
-
-    bool is_goal {false}; // слово написано полностью
-    bool is_start {true}; // начало слова (первая буква)
-    bool is_event {true}; // ожидается нажатие клавиши (не происходит анимации, пауз и звуковых подсказок)
 
     Clock clock;
-    int time; // miliseconds
+    float time {0}; // miliseconds
 
+    int current_status {start_word};
 
+    // Основной цикл событий
     while (win.isOpen())
     {
-        Event event;
-        time = clock.getElapsedTime().asMilliseconds();
-
-        // if (!is_event) {
-        while (win.pollEvent(event))
+        Event event_words;
+        // while (win.pollEvent(event_words)){} // цикл опроса событий для служебных нужд окна
+        switch (current_status)
         {
-            if(event.type == Event::Closed){
-                win.close();
+        case start_word: // -----------------------------------------
+            win.clear();
+            win.draw(background);
+            word_list[num]->draw_whole();
+            win.display();
+            sound_write_word.play();
+            while (sound_write_word.getStatus() == Sound::Playing) {
+                sleep(milliseconds(500));
             }
-            // Управление
-            switch (event.type)
-            {
-            case Event::KeyPressed:
-                if (event.key.code == Keyboard::Escape) {
+            word_list[num]->play();
+            sleep(milliseconds(1000));
+            
+            current_status = letter_run;
+            break;
+        case wait_press: // -----------------------------------------
+            if (win.waitEvent(event_words)) {
+                if(event_words.type == Event::Closed){
                     win.close();
                 }
-                if (!is_event) {
-                    if (event.key.code == word_list[num]->getKeyLetter()) {
-                        sound_good_press.play();
-                        is_event = true;
-                        if (!word_list[num]->nextLetter()) is_goal = true;
+                switch (event_words.type)
+                {
+                case Event::KeyPressed:
+                    if (event_words.key.code == Keyboard::Escape) {
+                        win.close();
+                    }
+                    if (event_words.key.code == word_list[num]->getKeyLetter()) {
+                        current_status = letter_pressed;
+                        clock.restart();
                     }
                     else
                     {
                         sound_bad_press.play();
                     }
+                    break;
                 }
-                break;
-            default:
-                break;
             }
-        }
-        // }
-
-        if (is_event) {
-            // if (word_list[num]->animate_letter(time)) {
-            //     if (!word_list[num]->nextLetter()) is_goal = true;
-            //     is_event = true;
-            // }
-            is_event = false;
-            win.clear();
-
-            if (is_goal) {
+            break;
+        case letter_pressed: // -----------------------------------------
+            sound_good_press.play();
+            while (word_list[num]->animate_letter(time)) {
+                time = clock.getElapsedTime().asMilliseconds();
+                win.clear();
                 win.draw(background);
-                word_list[num]->draw_whole();
-                win.draw(word_list[num]->getGoalSprite());
-                
+                word_list[num]->draw();
                 win.display();
-                sleep(seconds(1));
-                word_list[num]->play(); // звучание всего слова
-
+                sleep(milliseconds(5));
+            }
+            time = 0;
+            current_status = letter_done;
+            break;
+        case letter_done: // -----------------------------------------
+            if (!word_list[num]->nextLetter()) {
+                current_status = done_word;
             }
             else {
-                if (is_start) {
-                    win.draw(background);
-                    word_list[num]->draw_whole();
-                    win.display();
-                    sound_write_word.play();
-                    while (sound_write_word.getStatus() == Sound::Playing) {
-                        sleep(milliseconds(500));
-                    }
-                    word_list[num]->play();
-                    sleep(milliseconds(1000));
-                    
-                    win.clear();
-                    win.draw(background);
-                    word_list[num]->draw();
-                    win.display();
-                    word_list[num]->play_letter(); // звучание текущей (первой) буквы в слове
-                    is_start = false;
-                }
-                else {
-                    win.draw(background);
-                    word_list[num]->draw();
-                    win.display();
-                    word_list[num]->play_letter(); // звучание текущей буквы в слове
-                }
+                current_status = letter_run;
+            }
+            break;
+        case letter_run: // -----------------------------------------
+            win.clear();
+            win.draw(background);
+            word_list[num]->draw();
+            win.display();
+
+            sound_press_letter.play();
+            while (sound_press_letter.getStatus() == sf::Sound::Playing) {
+                sf::sleep(sf::milliseconds(100));
             }
 
-            // win.display();
+            word_list[num]->play_letter(); // звучание текущей буквы в слове
+            current_status = wait_press;
+            break;
+        case done_word: // -----------------------------------------
+            win.clear();
+            win.draw(background);
+            word_list[num]->draw_whole();
+            win.draw(word_list[num]->getGoalSprite());
+            
+            win.display();
+            sleep(seconds(1));
+            word_list[num]->play(); // звучание всего слова
 
-            if (is_goal) {
-                sleep(seconds(3));
-                is_goal = false;
-                is_start = true;
-                is_event = true;
-                if (++num >= num_max) {
-                    win.clear();
-                    win.draw(background);
-                    win.draw(wordGood);
-                    win.draw(signGood);
-                    win.display();
-                    soundGood.play();
-                    sleep(seconds(3));
-                    win.close();
-                }
-                else {
-                    sound_lets_continue.play();
-                    while (sound_lets_continue.getStatus() == Sound::Playing) {
-                        sleep(milliseconds(500));
-                    }
-                }
+            sleep(seconds(3));
+
+            if (++num >= num_max) {
+                current_status = finish;
             }
-
+            else {
+                sound_lets_continue.play();
+                while (sound_lets_continue.getStatus() == Sound::Playing) {
+                    sleep(milliseconds(500));
+                }
+                current_status = start_word;
+            }
+            break;
+        case finish: // -----------------------------------------
+            win.clear();
+            win.draw(background);
+            win.draw(wordGood);
+            win.draw(signGood);
+            win.display();
+            soundGood.play();
+            sleep(seconds(3));
+            win.close();
+            break;         
+        default: // -----------------------------------------
+            break;
         }
     }
 

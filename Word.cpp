@@ -6,7 +6,6 @@ void Word::setInitText(sf::Text& text, const sf::String& str, float xpos, float 
 {
 
 	text.setFont(font);
-	// text.setFillColor(letter_color);
 	text.setFillColor(sf::Color(0, 0, 0, 0));
 	text.setString(str);
 	text.setCharacterSize(size_font);
@@ -18,7 +17,6 @@ void Word::setInitText(sf::Text& text, const sf::String& str, float xpos, float 
 Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, const sf::String& word, std::string const& audioF, std::string const& textureF)
             : win(window), x(centerX), y(centerY), letter_list(word.getSize()), len(word.getSize()), size_font(fSize)
 {
-    // if (!font.loadFromFile("font/Industry-Bold.ttf")) exit(32);
     if (!font.loadFromFile("font/Waffle-Slab2.otf")) exit(32);
     zvuk_buffer.loadFromFile(audioF);
     zvuk.setBuffer(zvuk_buffer);
@@ -46,11 +44,9 @@ Word::Word(sf::RenderWindow& window, float centerX, float centerY, int fSize, co
     current_letter.setFillColor(letter_color);
     current_letter.setCharacterSize(size_font * 4);
     current_letter.setPosition(current_letter.getPosition().x - current_letter.getLocalBounds().width / 2, current_letter.getPosition().y);
+    current_letter_pos = current_letter.getPosition(); // запоминаем позицию большой текущей буквы
 
 	letter_list[current_letter_num].setFillColor(current_letter_color);
-
-    press_letter_buff.loadFromFile("audio/нажми_букву.ogg");
-    sound_press_letter.setBuffer(press_letter_buff);
 }
 
 Word::~Word()
@@ -73,29 +69,23 @@ void Word::play()
 {
     this->zvuk.play();
     while (this->zvuk.getStatus() == sf::Sound::Playing) {
-        sf::sleep(sf::milliseconds(500));
+        sf::sleep(sf::milliseconds(100));
     }
 }
 
 void Word::play_letter()
 {
-    sound_press_letter.play();
-    while (sound_press_letter.getStatus() == sf::Sound::Playing) {
-        sf::sleep(sf::milliseconds(500));
-    }
     letter_zvuk_buffer.loadFromFile("audio/letters/" + letter_code[letter_list[current_letter_num].getString()[0]].sound_file);
     letter_zvuk.setBuffer(letter_zvuk_buffer);
     this->letter_zvuk.play();
     while (this->letter_zvuk.getStatus() == sf::Sound::Playing) {
-        sf::sleep(sf::milliseconds(500));
+        sf::sleep(sf::milliseconds(100));
     }
 }
 
 bool Word::nextLetter()
 {
     if (++current_letter_num == len) return false;
-
-     // this->play_letter();
 
     letter_list[current_letter_num - 1].setFillColor(letter_color);
     letter_list[current_letter_num - 1].setCharacterSize(size_font);
@@ -104,29 +94,20 @@ bool Word::nextLetter()
     return true;
 }
 
-bool Word::animate_letter(int delta)
+bool Word::animate_letter(float delta)
 {
-    if (delta >= this->time_anim.asMilliseconds()) {
-        current_letter.setCharacterSize(size_font * 4);
-        // current_letter.setPosition(0, 0);
-        return true;
+    if (delta >= this->time_anim) {
+        current_letter.setCharacterSize(size_font * 4); // возвращаем размер большой текущей буквы
+        current_letter.setPosition(current_letter_pos); // возвращаем большую текущую букву на место
+        return false;
     }
 
-    int s;
-    s = size_font * (4 - 3 * delta / this->time_anim.asMilliseconds());
-    // current_letter.setPosition(0, 0);
-    current_letter.setCharacterSize(s);
-    return false;
+    float k = delta / this->time_anim;
+    current_letter.setPosition(current_letter_pos.x - (current_letter_pos.x - letter_list[current_letter_num].getPosition().x) * k,
+                               current_letter_pos.y - (current_letter_pos.y - letter_list[current_letter_num].getPosition().y) * k);
+    current_letter.setCharacterSize(size_font * (4 - 3 * k));
+    return true;
 }
-
-// void Word::restart()
-// {
-//     letter_list[current_letter_num - 1].setFillColor(letter_color);
-//     letter_list[current_letter_num - 1].setCharacterSize(size_font);
-//     current_letter_num = 0;
-//     letter_list[current_letter_num].setFillColor(current_letter_color);
-//     // letter_list[current_letter_num].setCharacterSize(size_font * 2);
-// }
 
 sf::Sprite Word::getGoalSprite()
 {
